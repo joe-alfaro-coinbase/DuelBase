@@ -479,22 +479,36 @@ export default function GamePage() {
                       <span>{isConfirming ? "Confirming transaction..." : "Submitting to blockchain..."}</span>
                     </div>
                   ) : (
-                <button
+                    <button
                       onClick={handleClaimWin}
                       disabled={isClaiming}
                       className="mt-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-semibold transition-all shadow-lg"
                     >
                       💰 Claim {Number(wagerAmount) * 2} DUEL
-                </button>
+                    </button>
                   )}
                 </>
               )}
+              
+              {/* Go Home Button */}
+              <Link
+                href="/"
+                className="mt-4 inline-block px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all"
+              >
+                🏠 Go Home
+              </Link>
             </div>
           )}
 
           {isDraw && (
-            <div className="bg-gray-500/20 border border-gray-500/50 rounded-xl p-3 text-center">
-              <p className="text-gray-300">🤝 It&apos;s a Draw!</p>
+            <div className="bg-gray-500/20 border border-gray-500/50 rounded-xl p-4 text-center">
+              <p className="text-gray-300 text-lg font-bold mb-4">🤝 It&apos;s a Draw!</p>
+              <Link
+                href="/"
+                className="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all"
+              >
+                🏠 Go Home
+              </Link>
             </div>
           )}
         </div>
