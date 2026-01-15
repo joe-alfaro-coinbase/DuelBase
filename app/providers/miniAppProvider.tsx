@@ -19,6 +19,9 @@ export function MiniAppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initMiniApp = async () => {
       try {
+        // Signal that the mini app is ready
+        sdk.actions.ready();
+        
         const status = await sdk.isInMiniApp();
         setIsInMiniApp(status);
 
