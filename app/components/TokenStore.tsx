@@ -22,7 +22,7 @@ export function TokenStore() {
   const chainId = useChainId();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const [duelAmount, setDuelAmount] = useState("");
-  const [step, setStep] = useState<"input" | "approve" | "buying-after-approve" | "buy" | "success">("input");
+  const [step, setStep] = useState<"input" | "approve" | "buying-after-approve" | "buy" | "refreshing" | "success">("input");
   
   // Check if on correct network
   const isWrongNetwork = chainId !== baseSepolia.id;
@@ -80,6 +80,9 @@ export function TokenStore() {
         };
         proceedToBuy();
       } else if (step === "buy") {
+        // Show refreshing state while updating balances
+        setStep("refreshing");
+        
         // Refetch balances after a short delay for blockchain state to propagate
         const refetchBalances = async () => {
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -181,7 +184,18 @@ export function TokenStore() {
 
       {/* Purchase Section */}
       <div className="p-6">
-        {step === "success" ? (
+        {step === "refreshing" ? (
+          <div className="text-center py-8">
+            <div className="text-6xl mb-4">
+              <svg className="animate-spin h-16 w-16 mx-auto text-purple-500" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-purple-400 mb-2">Updating Balances...</h3>
+            <p className="text-gray-400">Please wait while we refresh your balances</p>
+          </div>
+        ) : step === "success" ? (
           <div className="text-center py-8">
             <div className="text-6xl mb-4">🎉</div>
             <h3 className="text-2xl font-bold text-green-400 mb-2">Purchase Complete!</h3>
