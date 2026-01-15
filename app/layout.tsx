@@ -4,8 +4,6 @@ import { WalletIndicator } from "./components/WalletIndicator";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ErudaProvider } from "./providers/erudaProvider";
-import { sdk } from '@farcaster/miniapp-sdk';
-import { useEffect } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -66,10 +64,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useEffect(() => {
-    sdk.actions.ready();
-  }, []);
-
   return (
     <html lang="en">
       <head>
