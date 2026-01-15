@@ -89,14 +89,19 @@ export default function Home() {
           }, 500);
         });
       } else if (step === 'create' && receipt) {
-        // Game created successfully - extract gameId and navigate
-      let gameId = '0';
-      if (receipt.logs.length > 0) {
-        const firstLog = receipt.logs[0];
-        if (firstLog.topics[1]) {
-          gameId = BigInt(firstLog.topics[1]).toString();
+        // Game created successfully - extract gameId from GameCreated event
+        let gameId = '0';
+        
+        // Find the log from GameManager contract (not ERC20 transfer logs)
+        const gameManagerLog = receipt.logs.find(
+          (log) => log.address.toLowerCase() === CONTRACTS.GAME_MANAGER.toLowerCase()
+        );
+        
+        if (gameManagerLog && gameManagerLog.topics[1]) {
+          // topics[0] = event signature, topics[1] = gameId (indexed)
+          gameId = BigInt(gameManagerLog.topics[1]).toString();
         }
-      }
+        
         setCreatedGameId(gameId);
         setStep('success');
         refetchBalance();
