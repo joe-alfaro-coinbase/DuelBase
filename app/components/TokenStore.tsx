@@ -64,24 +64,29 @@ export function TokenStore() {
   useEffect(() => {
     if (isSuccess) {
       if (step === "approve") {
-        // Small delay for blockchain state to update
-        setTimeout(() => {
-          refetchAllowance();
-          setStep("buy");
+        // Wait for allowance to update, then auto-trigger buy
+        const proceedToBuy = async () => {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await refetchAllowance();
           reset();
-        }, 1000);
+          // Directly trigger buy after approval
+          if (duelAmountBigInt) {
+            setStep("buy");
+            buyTokens(duelAmountBigInt);
+          }
+        };
+        proceedToBuy();
       } else if (step === "buy") {
         // Refetch balances after a short delay for blockchain state to propagate
         const refetchBalances = async () => {
-          // Wait a bit for blockchain state
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 1000));
           await Promise.all([refetchDuel(), refetchUsdc()]);
           setStep("success");
         };
         refetchBalances();
       }
     }
-  }, [isSuccess, step, refetchAllowance, refetchDuel, refetchUsdc, reset]);
+  }, [isSuccess, step, refetchAllowance, refetchDuel, refetchUsdc, reset, duelAmountBigInt, buyTokens]);
 
   const handleApprove = useCallback(() => {
     if (!usdcCost) return;
