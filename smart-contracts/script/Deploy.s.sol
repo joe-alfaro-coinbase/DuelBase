@@ -5,6 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {DuelBaseToken} from "../src/DuelBaseToken.sol";
 import {GameManager} from "../src/GameManager.sol";
 import {TokenStore} from "../src/TokenStore.sol";
+import {TicTacToeGame} from "../src/TicTacToeGame.sol";
 
 /**
  * @title DeployDuelBase
@@ -37,6 +38,7 @@ contract DeployDuelBase is Script {
     DuelBaseToken public duelToken;
     GameManager public gameManager;
     TokenStore public tokenStore;
+    TicTacToeGame public ticTacToeGame;
 
     function run() external {
         // Get deployment configuration from environment
@@ -67,11 +69,15 @@ contract DeployDuelBase is Script {
         tokenStore = new TokenStore(address(duelToken), usdcAddress, INITIAL_PRICE);
         console.log("TokenStore deployed at:", address(tokenStore));
 
-        // 4. Transfer tokens to TokenStore
+        // 4. Deploy TicTacToeGame
+        ticTacToeGame = new TicTacToeGame(address(duelToken));
+        console.log("TicTacToeGame deployed at:", address(ticTacToeGame));
+
+        // 6. Transfer tokens to TokenStore
         duelToken.transfer(address(tokenStore), STORE_INVENTORY);
         console.log("Transferred", STORE_INVENTORY / 1e18, "DUEL to TokenStore");
 
-        // 5. Transfer tokens to airdrop wallet
+        // 7. Transfer tokens to airdrop wallet
         duelToken.transfer(airdropWallet, AIRDROP_POOL);
         console.log("Transferred", AIRDROP_POOL / 1e18, "DUEL to airdrop wallet");
 
@@ -82,6 +88,7 @@ contract DeployDuelBase is Script {
         console.log("DuelBaseToken:", address(duelToken));
         console.log("GameManager:", address(gameManager));
         console.log("TokenStore:", address(tokenStore));
+        console.log("TicTacToeGame:", address(ticTacToeGame));
         console.log("\nToken Distribution:");
         console.log("- Store Inventory:", STORE_INVENTORY / 1e18, "DUEL");
         console.log("- Airdrop Pool:", AIRDROP_POOL / 1e18, "DUEL");
@@ -133,6 +140,10 @@ contract DeployDuelBaseLocal is Script {
         TokenStore tokenStore = new TokenStore(address(duelToken), address(mockUsdc), INITIAL_PRICE);
         console.log("TokenStore deployed at:", address(tokenStore));
 
+        // Deploy TicTacToeGame
+        TicTacToeGame ticTacToeGame = new TicTacToeGame(address(duelToken));
+        console.log("TicTacToeGame deployed at:", address(ticTacToeGame));
+
         // Transfer tokens to TokenStore
         duelToken.transfer(address(tokenStore), STORE_INVENTORY);
         console.log("Transferred", STORE_INVENTORY / 1e18, "DUEL to TokenStore");
@@ -140,6 +151,9 @@ contract DeployDuelBaseLocal is Script {
         // Mint some USDC to deployer for testing
         mockUsdc.mint(msg.sender, 1_000_000 * 1e6);
         console.log("Minted 1,000,000 USDC to deployer");
+
+        // Transfer some DUEL tokens to deployer for testing games
+        console.log("Deployer DUEL balance:", (INITIAL_SUPPLY - STORE_INVENTORY) / 1e18, "DUEL");
 
         vm.stopBroadcast();
     }
@@ -189,5 +203,34 @@ contract MockUSDC {
         balanceOf[to] += amount;
         emit Transfer(from, to, amount);
         return true;
+    }
+}
+
+/**
+ * @title DeployTicTacToeGame
+ * @notice Deployment script for TicTacToeGame only (requires existing DUEL token)
+ * @dev Run with: forge script script/Deploy.s.sol:DeployTicTacToeGame --rpc-url <rpc> --broadcast
+ *      Requires: PRIVATE_KEY and DUEL_TOKEN_ADDRESS env variables
+ */
+contract DeployTicTacToeGame is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address duelTokenAddress = vm.envAddress("DUEL_TOKEN_ADDRESS");
+
+        console.log("Deploying TicTacToeGame...");
+        console.log("Chain ID:", block.chainid);
+        console.log("DUEL Token:", duelTokenAddress);
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        TicTacToeGame ticTacToeGame = new TicTacToeGame(duelTokenAddress);
+        console.log("TicTacToeGame deployed at:", address(ticTacToeGame));
+
+        vm.stopBroadcast();
+
+        console.log("\n=== Deployment Complete ===");
+        console.log("TicTacToeGame:", address(ticTacToeGame));
+        console.log("\nSet this in your .env:");
+        console.log("NEXT_PUBLIC_TICTACTOE_CONTRACT_ADDRESS=", address(ticTacToeGame));
     }
 }

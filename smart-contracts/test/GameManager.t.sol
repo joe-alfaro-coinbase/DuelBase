@@ -24,7 +24,7 @@ contract GameManagerTest is Test {
         address indexed player1,
         address indexed player2,
         uint256 wagerAmount,
-        uint256 player1Wager,
+        uint256 player2Wager,
         GameManager.GameType gameType
     );
     event GameJoined(uint256 indexed gameId, address indexed player2);
@@ -158,7 +158,7 @@ contract GameManagerTest is Test {
         assertEq(game.player1, alice);
         assertEq(game.player2, bob);
         assertEq(game.wagerAmount, wagerAmount);
-        assertEq(game.player1Wager, (wagerAmount * 10500) / 10000); // 5% edge
+        assertEq(game.player2Wager, (wagerAmount * 9500) / 10000); // 5% reduction for player2
         assertEq(uint256(game.gameType), uint256(GameManager.GameType.TicTacToe));
         assertEq(uint256(game.status), uint256(GameManager.GameStatus.Created));
         assertEq(game.winner, address(0));
@@ -166,19 +166,19 @@ contract GameManagerTest is Test {
 
     function test_createGame_transfersTokensFromPlayer1() public {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 player1Wager = (wagerAmount * 10500) / 10000; // 5% edge
 
         uint256 balanceBefore = token.balanceOf(alice);
 
         _createGame(alice, bob, wagerAmount, GameManager.GameType.TicTacToe);
 
-        assertEq(token.balanceOf(alice), balanceBefore - player1Wager);
-        assertEq(token.balanceOf(address(gameManager)), player1Wager);
+        // Player1 pays the full wager amount (no edge added)
+        assertEq(token.balanceOf(alice), balanceBefore - wagerAmount);
+        assertEq(token.balanceOf(address(gameManager)), wagerAmount);
     }
 
     function test_createGame_emitsGameCreatedEvent() public {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 player1Wager = (wagerAmount * 10500) / 10000;
+        uint256 player2Wager = (wagerAmount * 9500) / 10000; // 5% reduction
 
         vm.expectEmit(true, true, true, true);
         emit GameCreated(
@@ -186,7 +186,7 @@ contract GameManagerTest is Test {
             alice,
             bob,
             wagerAmount,
-            player1Wager,
+            player2Wager,
             GameManager.GameType.TicTacToe
         );
 
@@ -239,7 +239,7 @@ contract GameManagerTest is Test {
 
     function test_createGame_connectFourHasDifferentEdge() public {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 player1WagerConnectFour = (wagerAmount * 10300) / 10000; // 3% edge
+        uint256 player2WagerConnectFour = (wagerAmount * 9700) / 10000; // 3% reduction
 
         uint256 gameId = _createGame(
             alice,
@@ -249,7 +249,7 @@ contract GameManagerTest is Test {
         );
 
         GameManager.Game memory game = gameManager.getGame(gameId);
-        assertEq(game.player1Wager, player1WagerConnectFour);
+        assertEq(game.player2Wager, player2WagerConnectFour);
     }
 
     // ============ JoinGame Tests ============
@@ -270,6 +270,7 @@ contract GameManagerTest is Test {
 
     function test_joinGame_transfersTokensFromPlayer2() public {
         uint256 wagerAmount = 100 * 1e18;
+        uint256 player2Wager = (wagerAmount * 9500) / 10000; // 5% reduction
         uint256 gameId = _createGame(
             alice,
             bob,
@@ -280,7 +281,8 @@ contract GameManagerTest is Test {
         uint256 balanceBefore = token.balanceOf(bob);
         _joinGame(bob, gameId);
 
-        assertEq(token.balanceOf(bob), balanceBefore - wagerAmount);
+        // Player2 pays reduced wager
+        assertEq(token.balanceOf(bob), balanceBefore - player2Wager);
     }
 
     function test_joinGame_emitsGameJoinedEvent() public {
@@ -334,8 +336,8 @@ contract GameManagerTest is Test {
 
     function test_completeGame_player1Wins() public {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 player1Wager = (wagerAmount * 10500) / 10000;
-        uint256 totalPayout = player1Wager + wagerAmount;
+        uint256 player2Wager = (wagerAmount * 9500) / 10000; // 5% reduction
+        uint256 totalPayout = wagerAmount + player2Wager;
 
         uint256 gameId = _createGame(
             alice,
@@ -359,8 +361,8 @@ contract GameManagerTest is Test {
 
     function test_completeGame_player2Wins() public {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 player1Wager = (wagerAmount * 10500) / 10000;
-        uint256 totalPayout = player1Wager + wagerAmount;
+        uint256 player2Wager = (wagerAmount * 9500) / 10000; // 5% reduction
+        uint256 totalPayout = wagerAmount + player2Wager;
 
         uint256 gameId = _createGame(
             alice,
@@ -380,8 +382,8 @@ contract GameManagerTest is Test {
 
     function test_completeGame_emitsGameCompletedEvent() public {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 player1Wager = (wagerAmount * 10500) / 10000;
-        uint256 totalPayout = player1Wager + wagerAmount;
+        uint256 player2Wager = (wagerAmount * 9500) / 10000; // 5% reduction
+        uint256 totalPayout = wagerAmount + player2Wager;
 
         uint256 gameId = _createGame(
             alice,
@@ -508,7 +510,6 @@ contract GameManagerTest is Test {
 
     function test_cancelGame_refundsPlayer1() public {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 player1Wager = (wagerAmount * 10500) / 10000;
 
         uint256 gameId = _createGame(
             alice,
@@ -525,7 +526,8 @@ contract GameManagerTest is Test {
         vm.prank(alice);
         gameManager.cancelGame(gameId);
 
-        assertEq(token.balanceOf(alice), aliceBalanceBefore + player1Wager);
+        // Player1 gets refunded their full wager
+        assertEq(token.balanceOf(alice), aliceBalanceBefore + wagerAmount);
     }
 
     function test_cancelGame_updatesStatus() public {
@@ -680,20 +682,20 @@ contract GameManagerTest is Test {
 
     // ============ View Functions Tests ============
 
-    function test_calculatePlayer1Wager() public view {
+    function test_calculatePlayer2Wager() public view {
         uint256 wagerAmount = 100 * 1e18;
-        uint256 expectedTicTacToe = (wagerAmount * 10500) / 10000;
-        uint256 expectedConnectFour = (wagerAmount * 10300) / 10000;
+        uint256 expectedTicTacToe = (wagerAmount * 9500) / 10000; // 5% reduction
+        uint256 expectedConnectFour = (wagerAmount * 9700) / 10000; // 3% reduction
 
         assertEq(
-            gameManager.calculatePlayer1Wager(
+            gameManager.calculatePlayer2Wager(
                 wagerAmount,
                 GameManager.GameType.TicTacToe
             ),
             expectedTicTacToe
         );
         assertEq(
-            gameManager.calculatePlayer1Wager(
+            gameManager.calculatePlayer2Wager(
                 wagerAmount,
                 GameManager.GameType.ConnectFour
             ),
