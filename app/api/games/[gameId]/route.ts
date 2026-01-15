@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 // This will persist across requests but reset on server restart
 const gameStates = new Map<string, GameState>();
 
+// Turn timer duration in milliseconds (60 seconds)
+const TURN_TIME_LIMIT_MS = 60 * 1000;
+
 interface GameState {
   gameId: string;
   gameType: "tictactoe" | "connect4";
@@ -13,6 +16,8 @@ interface GameState {
   winner: string | null;
   isDraw: boolean;
   lastUpdated: number;
+  turnStartTime: number; // timestamp when current turn started
+  timeoutLoser: string | null; // address of player who timed out (if any)
 }
 
 interface Move {
@@ -58,6 +63,7 @@ export async function POST(
       initialBoard = Array(9).fill(0);
     }
     
+    const now = Date.now();
     const state: GameState = {
       gameId,
       gameType,
@@ -66,7 +72,9 @@ export async function POST(
       moves: [],
       winner: null,
       isDraw: false,
-      lastUpdated: Date.now(),
+      lastUpdated: now,
+      turnStartTime: now,
+      timeoutLoser: null,
     };
     
     gameStates.set(gameId, state);
@@ -157,11 +165,49 @@ export async function POST(
     }
     
     // Switch turns if game isn't over
+    const now = Date.now();
     if (!state.winner && !state.isDraw) {
       const nextPlayer = body.opponent;
       state.currentTurn = nextPlayer;
+      state.turnStartTime = now; // Reset turn timer for next player
     }
     
+    state.lastUpdated = now;
+    gameStates.set(gameId, state);
+    
+    return NextResponse.json({ success: true, state });
+  }
+  
+  // Handle timeout claim
+  if (body.action === "timeout") {
+    const { claimedBy, timedOutPlayer } = body;
+    
+    let state = gameStates.get(gameId);
+    if (!state) {
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
+    }
+    
+    // Check if game is already over
+    if (state.winner || state.isDraw || state.timeoutLoser) {
+      return NextResponse.json({ error: "Game is already over" }, { status: 400 });
+    }
+    
+    // Verify it's the opponent's turn who timed out
+    if (state.currentTurn.toLowerCase() !== timedOutPlayer.toLowerCase()) {
+      return NextResponse.json({ error: "Invalid timeout claim - not their turn" }, { status: 400 });
+    }
+    
+    // Verify the timeout actually occurred
+    const elapsed = Date.now() - state.turnStartTime;
+    if (elapsed < TURN_TIME_LIMIT_MS) {
+      return NextResponse.json({ 
+        error: `Timeout not reached. ${Math.ceil((TURN_TIME_LIMIT_MS - elapsed) / 1000)}s remaining` 
+      }, { status: 400 });
+    }
+    
+    // Process timeout - the claimer wins
+    state.winner = claimedBy;
+    state.timeoutLoser = timedOutPlayer;
     state.lastUpdated = Date.now();
     gameStates.set(gameId, state);
     

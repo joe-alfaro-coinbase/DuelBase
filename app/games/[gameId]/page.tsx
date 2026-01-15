@@ -8,6 +8,9 @@ import Link from "next/link";
 import { useGame, GameType, GameStatus, useGameActions, DUEL_DECIMALS } from "@/app/hooks/useGameContracts";
 import { formatUnits } from "viem";
 
+// Turn timer duration in seconds
+const TURN_TIME_LIMIT_SECONDS = 60;
+
 // Types for synced game state
 interface SyncedGameState {
   gameId: string;
@@ -18,6 +21,8 @@ interface SyncedGameState {
   winner: string | null;
   isDraw: boolean;
   lastUpdated: number;
+  turnStartTime: number;
+  timeoutLoser: string | null;
 }
 
 export default function GamePage() {
@@ -49,6 +54,10 @@ export default function GamePage() {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimStep, setClaimStep] = useState<"idle" | "signing" | "submitting" | "success">("idle");
   const [hasClaimed, setHasClaimed] = useState(false);
+  
+  // Timer state
+  const [timeRemaining, setTimeRemaining] = useState<number>(TURN_TIME_LIMIT_SECONDS);
+  const [isClaimingTimeout, setIsClaimingTimeout] = useState(false);
   
   const isWrongNetwork = chainId !== baseSepolia.id;
 
@@ -128,6 +137,68 @@ export default function GamePage() {
       }
     };
   }, [gameIdStr, syncedState]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (!syncedState || syncedState.winner || syncedState.isDraw) return;
+    
+    const updateTimer = () => {
+      const elapsed = Date.now() - syncedState.turnStartTime;
+      const remaining = Math.max(0, TURN_TIME_LIMIT_SECONDS - Math.floor(elapsed / 1000));
+      setTimeRemaining(remaining);
+    };
+    
+    // Update immediately
+    updateTimer();
+    
+    // Update every second
+    const timerInterval = setInterval(updateTimer, 1000);
+    
+    return () => clearInterval(timerInterval);
+  }, [syncedState]);
+
+  // Claim timeout win
+  const claimTimeout = useCallback(async () => {
+    if (!game || !address || !syncedState || isClaimingTimeout) return;
+    
+    const timedOutPlayer = syncedState.currentTurn;
+    
+    // Verify it's the opponent who timed out
+    if (timedOutPlayer.toLowerCase() === address.toLowerCase()) {
+      setError("You can't claim timeout on yourself!");
+      setTimeout(() => setError(null), 2000);
+      return;
+    }
+    
+    setIsClaimingTimeout(true);
+    
+    try {
+      const res = await fetch(`/api/games/${gameIdStr}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "timeout",
+          claimedBy: address,
+          timedOutPlayer,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setSyncedState(data.state);
+      } else {
+        setError(data.error || "Failed to claim timeout");
+        setTimeout(() => setError(null), 3000);
+      }
+    } catch (err) {
+      console.error("Timeout claim error:", err);
+      setError("Failed to claim timeout");
+      setTimeout(() => setError(null), 2000);
+    } finally {
+      setIsClaimingTimeout(false);
+    }
+  }, [game, address, syncedState, gameIdStr, isClaimingTimeout]);
 
   // Handle making a move
   const makeMove = useCallback(async (position: number) => {
@@ -361,6 +432,11 @@ export default function GamePage() {
             }`}>
               <p className={`text-lg font-bold mb-2 ${winner.toLowerCase() === address.toLowerCase() ? "text-green-300" : "text-red-300"}`}>
                 {winner.toLowerCase() === address.toLowerCase() ? "🎉 You Won!" : "😢 You Lost!"}
+                {syncedState?.timeoutLoser && (
+                  <span className="block text-sm font-normal mt-1 opacity-75">
+                    (by timeout ⏱️)
+                  </span>
+                )}
               </p>
               
               {winner.toLowerCase() === address.toLowerCase() && (
@@ -415,12 +491,50 @@ export default function GamePage() {
         {/* Game Board */}
         {isGameActive && !winner && !isDraw && syncedState && (
           <div className="flex flex-col items-center">
-            {/* Turn Indicator */}
-            <div className="mb-4 text-lg font-semibold">
-              <span className={`inline-flex items-center gap-2 ${isMyTurn ? "text-green-400" : "text-yellow-400"}`}>
-                <span className={`w-4 h-4 rounded-full ${isMyTurn ? "bg-green-400" : "bg-yellow-400"}`}></span>
-                {isMyTurn ? "Your turn!" : "Waiting for opponent..."}
-              </span>
+            {/* Turn Indicator with Timer */}
+            <div className="mb-4 text-center">
+              <div className="text-lg font-semibold mb-2">
+                <span className={`inline-flex items-center gap-2 ${isMyTurn ? "text-green-400" : "text-yellow-400"}`}>
+                  <span className={`w-4 h-4 rounded-full ${isMyTurn ? "bg-green-400" : "bg-yellow-400"}`}></span>
+                  {isMyTurn ? "Your turn!" : "Waiting for opponent..."}
+                </span>
+              </div>
+              
+              {/* Timer Display */}
+              <div className={`text-3xl font-mono font-bold ${
+                timeRemaining <= 10 
+                  ? "text-red-500 animate-pulse" 
+                  : timeRemaining <= 30 
+                    ? "text-yellow-400" 
+                    : "text-white"
+              }`}>
+                ⏱️ {timeRemaining}s
+              </div>
+              
+              {/* Timeout Claim Button - shown when opponent has timed out */}
+              {timeRemaining === 0 && !isMyTurn && (
+                <button
+                  onClick={claimTimeout}
+                  disabled={isClaimingTimeout}
+                  className="mt-3 px-6 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold transition-all shadow-lg animate-bounce"
+                >
+                  {isClaimingTimeout ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Claiming...
+                    </span>
+                  ) : (
+                    "🏆 Claim Timeout Win!"
+                  )}
+                </button>
+              )}
+              
+              {/* Warning when time is running out on your turn */}
+              {timeRemaining <= 10 && timeRemaining > 0 && isMyTurn && (
+                <p className="text-red-400 text-sm mt-2 animate-pulse">
+                  ⚠️ Hurry! You&apos;ll lose if time runs out!
+                </p>
+              )}
             </div>
             
             {/* Player Info */}
