@@ -125,11 +125,11 @@ export default function StartGameModal({ open, onClose, onSubmit, isLoading = fa
                 select
                 fullWidth
                 label="Game Type"
-                disabled
-                helperText="More games coming soon!"
+                helperText="Choose your battle!"
                 sx={{ mb: 3 }}
               >
-                <MenuItem value="tictactoe">Tic Tac Toe</MenuItem>
+                <MenuItem value="tictactoe">🎯 Tic Tac Toe</MenuItem>
+                <MenuItem value="connect4">🔴 Connect 4</MenuItem>
               </TextField>
             )}
           />

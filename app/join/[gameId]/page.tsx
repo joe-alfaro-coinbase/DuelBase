@@ -200,7 +200,13 @@ export default function JoinGamePage() {
           <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-4 mb-6 text-center">
             <div className="text-4xl mb-2">🎉</div>
             <h3 className="font-bold text-green-400 mb-2">You&apos;re In!</h3>
-            <p className="text-green-300 text-sm">Game is now active. Time to play!</p>
+            <p className="text-green-300 text-sm mb-4">Game is now active. Time to play!</p>
+            <Link
+              href={`/game/${gameId}`}
+              className="inline-block px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl transition-all"
+            >
+              🎮 Start Playing
+            </Link>
           </div>
         )}
 

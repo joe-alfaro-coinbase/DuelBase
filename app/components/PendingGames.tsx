@@ -25,6 +25,7 @@ interface PendingGame {
   gameType: string;
   isChallenger: boolean;
   createdAt: Date;
+  status: GameStatus;
 }
 
 export function PendingGames() {
@@ -67,8 +68,8 @@ export function PendingGames() {
       
       const game = result.result as GameData;
       
-      // Only show Created (waiting) games
-      if (game.status !== GameStatus.Created) return;
+      // Show Created (waiting) and Active games
+      if (game.status !== GameStatus.Created && game.status !== GameStatus.Active) return;
       
       const player1 = game.player1.toLowerCase();
       const player2 = game.player2.toLowerCase();
@@ -84,6 +85,7 @@ export function PendingGames() {
           gameType: game.gameType === GameType.TicTacToe ? "Tic Tac Toe" : "Connect Four",
           isChallenger,
           createdAt: new Date(Number(game.createdAt) * 1000),
+          status: game.status,
         });
       }
     });
@@ -137,15 +139,26 @@ export function PendingGames() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-lg">
-                  {game.isChallenger ? "⚔️" : "📩"}
+                  {game.status === GameStatus.Active ? "🎮" : game.isChallenger ? "⚔️" : "📩"}
                 </span>
                 <span className="font-medium text-white">
-                  {game.isChallenger ? "Waiting for opponent" : "You're invited!"}
+                  {game.status === GameStatus.Active 
+                    ? "Game in progress" 
+                    : game.isChallenger 
+                    ? "Waiting for opponent" 
+                    : "You're invited!"}
                 </span>
               </div>
-              <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full border border-purple-500/30">
-                {game.gameType}
-              </span>
+              <div className="flex items-center gap-2">
+                {game.status === GameStatus.Active && (
+                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full border border-green-500/30">
+                    Active
+                  </span>
+                )}
+                <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full border border-purple-500/30">
+                  {game.gameType}
+                </span>
+              </div>
             </div>
 
             <div className="text-sm text-gray-400 mb-3">
@@ -159,25 +172,42 @@ export function PendingGames() {
                 {Number(game.wagerAmount).toLocaleString()} DUEL
               </span>
 
-              {game.isChallenger ? (
-                <button
-                  onClick={() => copyInviteLink(game.id)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1"
-                >
-                  {copiedId === game.id.toString() ? (
-                    <>✓ Copied!</>
-                  ) : (
-                    <>📋 Copy Link</>
-                  )}
-                </button>
-              ) : (
-                <Link
-                  href={`/join/${game.id}`}
-                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  Accept
-                </Link>
-              )}
+              <div className="flex items-center gap-2">
+                {game.status === GameStatus.Active ? (
+                  <Link
+                    href={`/game/${game.id}`}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    🎮 Play
+                  </Link>
+                ) : game.isChallenger ? (
+                  <>
+                    <button
+                      onClick={() => copyInviteLink(game.id)}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      {copiedId === game.id.toString() ? (
+                        <>✓ Copied!</>
+                      ) : (
+                        <>📋 Copy Link</>
+                      )}
+                    </button>
+                    <Link
+                      href={`/game/${game.id}`}
+                      className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-sm font-medium rounded-lg transition-colors border border-purple-500/30"
+                    >
+                      View
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href={`/join/${game.id}`}
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Accept
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         ))}
