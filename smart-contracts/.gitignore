@@ -1,0 +1,23 @@
+# Compiler output
+cache/
+out/
+
+# Dependencies (installed via forge install)
+lib/
+
+# Dotenv
+.env
+.env.*
+
+# Broadcast logs
+broadcast/
+
+# Coverage
+lcov.info
+coverage/
+
+# Docs
+docs/
+
+# OS
+.DS_Store
