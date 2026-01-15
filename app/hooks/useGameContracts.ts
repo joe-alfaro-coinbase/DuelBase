@@ -314,7 +314,7 @@ export interface GameData {
   player1: `0x${string}`;
   player2: `0x${string}`;
   wagerAmount: bigint;
-  player2Wager: bigint;
+  player1Wager: bigint; // Amount player1 pays (includes edge percentage)
   gameType: number;
   status: number;
   createdAt: bigint;

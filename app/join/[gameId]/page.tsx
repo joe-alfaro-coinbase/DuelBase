@@ -63,13 +63,13 @@ export default function JoinGamePage() {
   }, [isSuccess, step, refetchAllowance, refetchGame]);
 
   // Format values for display
+  // Player 2 pays wagerAmount (the base wager, no edge)
   const formattedWager = game ? formatUnits(game.wagerAmount, DUEL_DECIMALS) : "0";
-  const formattedPlayer2Wager = game ? formatUnits(game.player2Wager, DUEL_DECIMALS) : "0";
   const formattedBalance = duelBalance ? formatUnits(duelBalance, DUEL_DECIMALS) : "0";
 
-  // Check if user needs to approve tokens
-  const needsApproval = game && duelAllowance !== undefined && duelAllowance < game.player2Wager;
-  const hasEnoughBalance = game && duelBalance !== undefined && duelBalance >= game.player2Wager;
+  // Check if user needs to approve tokens (player 2 needs to approve wagerAmount)
+  const needsApproval = game && duelAllowance !== undefined && duelAllowance < game.wagerAmount;
+  const hasEnoughBalance = game && duelBalance !== undefined && duelBalance >= game.wagerAmount;
 
   // Check if user is the invited player
   const isInvitedPlayer = game && address && game.player2.toLowerCase() === address.toLowerCase();
@@ -81,7 +81,7 @@ export default function JoinGamePage() {
   const handleApprove = () => {
     if (!game) return;
     setStep("approve");
-    approveTokens(game.player2Wager);
+    approveTokens(game.wagerAmount);
   };
 
   const handleJoin = () => {
@@ -168,7 +168,7 @@ export default function JoinGamePage() {
             </div>
             <div className="flex justify-between items-center text-sm mt-1">
               <span className="opacity-60">Your stake (with edge discount)</span>
-              <span className="font-medium">{Number(formattedPlayer2Wager).toLocaleString()} DUEL</span>
+              <span className="font-medium">{Number(formattedWager).toLocaleString()} DUEL</span>
             </div>
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function JoinGamePage() {
             {!hasEnoughBalance && (
               <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-4 mb-4">
                 <p className="text-yellow-300 text-sm">
-                  You need {Number(formattedPlayer2Wager).toLocaleString()} DUEL to join.
+                  You need {Number(formattedWager).toLocaleString()} DUEL to join.
                   <br />
                   Your balance: {Number(formattedBalance).toLocaleString()} DUEL
                 </p>
@@ -327,7 +327,7 @@ export default function JoinGamePage() {
                     Joining...
                   </>
                 ) : (
-                  <>⚔️ Join Game & Stake {Number(formattedPlayer2Wager).toLocaleString()} DUEL</>
+                  <>⚔️ Join Game & Stake {Number(formattedWager).toLocaleString()} DUEL</>
                 )}
               </button>
             )}

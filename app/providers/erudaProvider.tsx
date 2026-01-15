@@ -1,11 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
+
 export function ErudaProvider() {
-  return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-      <script src="https://cdn.jsdelivr.net/npm/eruda" />
-      <script>eruda.init();</script>
-    </>
-  );
+  useEffect(() => {
+    // Only load Eruda on the client side to prevent hydration mismatch
+    if (typeof window !== 'undefined' && !(window as unknown as { eruda?: unknown }).eruda) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+      script.onload = () => {
+        (window as unknown as { eruda: { init: () => void } }).eruda.init();
+      };
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  return null;
 }
