@@ -49,7 +49,7 @@ export const metadata: Metadata = {
         title: "Open App",
         action: {
           type: "launch_miniapp",
-          url: "https://starterminiapp.com",
+          url: "https://duel-base.vercel.app",
           name: "Base Mini App Starter",
           splashImageUrl: "https://starterminiapp.com/splash.png",
           splashBackgroundColor: "#000000"
