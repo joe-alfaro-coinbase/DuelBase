@@ -10,7 +10,7 @@
   "miniapp": {
     "version": "1",
     "name": "Base Mini App Starter",
-    "homeUrl": "https://starterminiapp.com",
+    "homeUrl": "https://duel-base.vercel.app",
     "iconUrl": "https://starterminiapp.com/icon.png",
     "splashImageUrl": "https://starterminiapp.com/splash.png",
     "splashBackgroundColor": "#000000",
