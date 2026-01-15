@@ -613,20 +613,6 @@ export default function GamePage() {
           </div>
         )}
 
-        {/* Testing Instructions */}
-        <div className="mt-8 bg-gray-800/30 rounded-xl p-4">
-          <h3 className="font-semibold text-green-400 mb-2">✅ Real-Time Sync Enabled</h3>
-          <p className="text-sm text-gray-400 mb-2">
-            Game state is synced between players! To test:
-          </p>
-          <ol className="text-sm text-gray-400 list-decimal list-inside space-y-1">
-            <li>Create a game with one wallet (Player 1)</li>
-            <li>Open the invite link in another browser/incognito</li>
-            <li>Connect a different wallet (Player 2)</li>
-            <li>Accept the wager and start playing</li>
-            <li>Moves sync automatically between both players!</li>
-          </ol>
-        </div>
       </div>
     </div>
   );
