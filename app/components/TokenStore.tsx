@@ -22,7 +22,7 @@ export function TokenStore() {
   const chainId = useChainId();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const [duelAmount, setDuelAmount] = useState("");
-  const [step, setStep] = useState<"input" | "approve" | "buy" | "success">("input");
+  const [step, setStep] = useState<"input" | "approve" | "buying-after-approve" | "buy" | "success">("input");
   
   // Check if on correct network
   const isWrongNetwork = chainId !== baseSepolia.id;
@@ -64,6 +64,9 @@ export function TokenStore() {
   useEffect(() => {
     if (isSuccess) {
       if (step === "approve") {
+        // Show loading state while preparing buy
+        setStep("buying-after-approve");
+        
         // Wait for allowance to update, then auto-trigger buy
         const proceedToBuy = async () => {
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -282,16 +285,16 @@ export function TokenStore() {
             {duelAmount && Number(duelAmount) > 0 && !isWrongNetwork && (
               <button
                 onClick={needsApproval ? handleApprove : handleBuy}
-                disabled={isPending || isConfirming || !usdcCost || (usdcBalance !== undefined && usdcCost !== undefined && usdcCost > usdcBalance)}
+                disabled={isPending || isConfirming || step === "buying-after-approve" || !usdcCost || (usdcBalance !== undefined && usdcCost !== undefined && usdcCost > usdcBalance)}
                 className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isPending || isConfirming ? (
+                {isPending || isConfirming || step === "buying-after-approve" ? (
                   <>
                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    {step === "approve" ? "Approving..." : "Purchasing..."}
+                    {step === "approve" ? "Approving..." : step === "buying-after-approve" ? "Preparing purchase..." : "Purchasing..."}
                   </>
                 ) : needsApproval ? (
                   <>
