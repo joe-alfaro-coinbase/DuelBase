@@ -1,11 +1,12 @@
 'use client';
 
 import { sdk } from '@farcaster/miniapp-sdk';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { baseSepolia } from 'wagmi/chains';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMiniApp } from './providers/miniAppProvider';
 import { PendingGames } from './components/PendingGames';
 import {
@@ -18,6 +19,7 @@ import {
 } from './hooks/useGameContracts';
 
 export default function Home() {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
@@ -48,6 +50,7 @@ export default function Home() {
     error,
     hash,
     reset,
+    receipt,
   } = useGameActions();
 
   const formattedBalance = duelBalance ? formatUnits(duelBalance, DUEL_DECIMALS) : '0';
@@ -79,13 +82,21 @@ export default function Home() {
             }
           }, 500);
         });
-      } else if (step === 'create') {
-        // Game created successfully
+      } else if (step === 'create' && receipt) {
+        // Game created successfully - extract gameId and navigate
+        let gameId = '0';
+        if (receipt.logs.length > 0) {
+          const firstLog = receipt.logs[0];
+          if (firstLog.topics[1]) {
+            gameId = BigInt(firstLog.topics[1]).toString();
+          }
+        }
+        setCreatedGameId(gameId);
         setStep('success');
         refetchBalance();
       }
     }
-  }, [isSuccess, hash, step, opponent, wagerAmount, gameType, refetchAllowance, refetchBalance, createGame, reset]);
+  }, [isSuccess, hash, step, opponent, wagerAmount, gameType, refetchAllowance, refetchBalance, createGame, reset, receipt]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,9 +128,15 @@ export default function Home() {
     setCopied(false);
   };
 
+  const goToGame = () => {
+    if (createdGameId) {
+      router.push(`/games/${CONTRACTS.TICTACTOE}?gameId=${createdGameId}`);
+    }
+  };
+
   const copyInviteLink = () => {
     if (createdGameId) {
-      navigator.clipboard.writeText(`${window.location.origin}/join/${createdGameId}`);
+      navigator.clipboard.writeText(`${window.location.origin}/games/${CONTRACTS.TICTACTOE}?gameId=${createdGameId}`);
       setCopied(true);
     }
   };
@@ -202,7 +219,7 @@ export default function Home() {
                 <div className="text-6xl mb-4">🎉</div>
                 <h2 className="text-2xl font-bold text-white mb-2">Game Created!</h2>
                 <p className="text-gray-400 mb-6">
-                  Share this link with your opponent to start the game.
+                  Share the link with your opponent or go to the game page.
                 </p>
                 
                 {hash && (
@@ -212,16 +229,26 @@ export default function Home() {
                   </div>
                 )}
 
-                <p className="text-sm text-gray-500 mb-4">
-                  Check the &quot;Your Games&quot; section below to find your game and copy the invite link.
-                </p>
-
-                <button
-                  onClick={resetForm}
-                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all"
-                >
-                  Done
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={goToGame}
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all"
+                  >
+                    🎮 Go to Game
+                  </button>
+                  <button
+                    onClick={copyInviteLink}
+                    className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-xl transition-all border border-purple-500/30"
+                  >
+                    {copied ? '✅ Link Copied!' : '📋 Copy Invite Link'}
+                  </button>
+                  <button
+                    onClick={resetForm}
+                    className="w-full py-3 text-gray-400 hover:text-white transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             ) : (
               // Form State

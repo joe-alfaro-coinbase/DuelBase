@@ -4,12 +4,13 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import { baseSepolia } from "wagmi/chains";
 import { parseEther, formatEther } from "viem";
 
-// ============ Contract Addresses (Base Sepolia) ============
+// ============ Contract Addresses (from environment variables) ============
 export const CONTRACTS = {
-  DUEL_TOKEN: "0x84d46e11EdD0fB5d8bAb68E55DF1D8Cd10B91FfB",
-  GAME_MANAGER: "0xA40b4539d79ed767C8603e7f2E8F12D873174294",
-  TOKEN_STORE: "0x3DE5ACcd7ABE6a25EDfc06326988A06342c8b21E",
-  USDC: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia USDC
+  DUEL_TOKEN: (process.env.NEXT_PUBLIC_DUEL_TOKEN_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  GAME_MANAGER: (process.env.NEXT_PUBLIC_GAME_MANAGER_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  TOKEN_STORE: (process.env.NEXT_PUBLIC_TOKEN_STORE_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  TICTACTOE: (process.env.NEXT_PUBLIC_TICTACTOE_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  USDC: (process.env.NEXT_PUBLIC_USDC_ADDRESS || "0x036CbD53842c5426634e7929541eC2318f3dCF7e") as `0x${string}`, // Base Sepolia USDC fallback
 } as const;
 
 // ============ Constants ============
@@ -338,7 +339,7 @@ export function useCalculatePlayer1Wager(wagerAmount: bigint, gameType: GameType
  */
 export function useGameActions() {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash });
 
   const approveTokens = (amount: bigint) => {
     writeContract({
@@ -402,6 +403,7 @@ export function useGameActions() {
     isSuccess,
     error,
     reset,
+    receipt,
   };
 }
 
