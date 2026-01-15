@@ -193,6 +193,36 @@ export default function StartGameModal({ open, onClose, onSubmit }: StartGameMod
             </Button>
           </Box>
         </form>
+
+        {/* Store Link */}
+        <Box
+          sx={{
+            mt: 3,
+            pt: 3,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Need more DUEL tokens?
+          </Typography>
+          <Button
+            href="/store"
+            variant="text"
+            sx={{
+              color: 'warning.main',
+              fontWeight: 600,
+              '&:hover': {
+                backgroundColor: 'warning.light',
+                color: 'warning.dark',
+              },
+            }}
+            startIcon={<span>🪙</span>}
+          >
+            Visit the Token Store
+          </Button>
+        </Box>
       </Box>
     </Modal>
   );
