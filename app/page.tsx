@@ -33,7 +33,7 @@ export default function Home() {
   const [opponent, setOpponent] = useState('');
   const [wagerAmount, setWagerAmount] = useState('');
   const [gameType, setGameType] = useState<GameType>(GameType.TicTacToe);
-  const [step, setStep] = useState<'form' | 'approve' | 'create' | 'success'>('form');
+  const [step, setStep] = useState<'form' | 'approve' | 'creating-after-approve' | 'create' | 'success'>('form');
   const [createdGameId, setCreatedGameId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -72,22 +72,25 @@ export default function Home() {
   useEffect(() => {
     if (isSuccess && hash) {
       if (step === 'approve') {
-        // Approval succeeded - refetch allowance and move to next step
-        refetchAllowance().then(() => {
-          // Reset the hook state before creating game
+        // Show loading state while preparing to create game
+        setStep('creating-after-approve');
+        
+        // Wait for allowance to update, then auto-trigger create
+        const proceedToCreate = async () => {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await refetchAllowance();
           reset();
-          // Small delay to ensure state is clean
-          setTimeout(() => {
-            if (opponent && wagerAmount) {
-              setStep('create');
-              createGame(
-                opponent as `0x${string}`,
-                parseUnits(wagerAmount, DUEL_DECIMALS),
-                gameType
-              );
-            }
-          }, 500);
-        });
+          // Directly trigger createGame after approval
+          if (opponent && wagerAmount) {
+            setStep('create');
+            createGame(
+              opponent as `0x${string}`,
+              parseUnits(wagerAmount, DUEL_DECIMALS),
+              gameType
+            );
+          }
+        };
+        proceedToCreate();
       } else if (step === 'create' && receipt) {
         // Game created successfully - extract gameId from GameCreated event
         let gameId = '0';
@@ -371,19 +374,20 @@ export default function Home() {
                     disabled={
                       isPending ||
                       isConfirming ||
+                      step === 'creating-after-approve' ||
                       !opponent ||
                       !wagerAmount ||
                       !hasEnoughBalance
                     }
                     className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {isPending || isConfirming ? (
+                    {isPending || isConfirming || step === 'creating-after-approve' ? (
                       <>
                         <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
-                        {step === 'approve' ? 'Approving...' : 'Creating...'}
+                        {step === 'approve' ? 'Approving...' : step === 'creating-after-approve' ? 'Preparing game...' : 'Creating...'}
                       </>
                     ) : needsApproval ? (
                       '🔓 Approve & Create Game'
