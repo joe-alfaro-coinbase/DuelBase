@@ -211,6 +211,13 @@ export default function GamePage() {
       return;
     }
     
+    // Check if already timed out locally
+    if (timeRemaining === 0) {
+      setError("Time expired! You lost by timeout.");
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    
     const isPlayer1 = address.toLowerCase() === game.player1.toLowerCase();
     const opponent = isPlayer1 ? game.player2 : game.player1;
     
@@ -231,15 +238,19 @@ export default function GamePage() {
       if (data.success) {
         setSyncedState(data.state);
       } else {
+        // If server returned updated state (e.g., timeout loss), use it
+        if (data.state) {
+          setSyncedState(data.state);
+        }
         setError(data.error || "Failed to make move");
-        setTimeout(() => setError(null), 2000);
+        setTimeout(() => setError(null), 3000);
       }
     } catch (err) {
       console.error("Move error:", err);
       setError("Failed to make move");
       setTimeout(() => setError(null), 2000);
     }
-  }, [game, address, syncedState, gameIdStr]);
+  }, [game, address, syncedState, gameIdStr, timeRemaining]);
 
   // Handle claiming the win
   const handleClaimWin = useCallback(async () => {
@@ -373,7 +384,7 @@ export default function GamePage() {
   
   // Format address for display
   const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white p-4">
       <div className="max-w-2xl mx-auto">
@@ -405,7 +416,7 @@ export default function GamePage() {
               <p className="font-semibold text-green-400">{Number(wagerAmount) * 2} DUEL</p>
             </div>
           </div>
-          
+
           {/* Status Banner */}
           {!isGameActive && gameStatus === GameStatus.Created && (
             <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 text-center">
@@ -468,19 +479,19 @@ export default function GamePage() {
                       <span>{isConfirming ? "Confirming transaction..." : "Submitting to blockchain..."}</span>
                     </div>
                   ) : (
-                    <button
+                <button
                       onClick={handleClaimWin}
                       disabled={isClaiming}
                       className="mt-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-semibold transition-all shadow-lg"
                     >
                       💰 Claim {Number(wagerAmount) * 2} DUEL
-                    </button>
+                </button>
                   )}
                 </>
               )}
             </div>
           )}
-          
+
           {isDraw && (
             <div className="bg-gray-500/20 border border-gray-500/50 rounded-xl p-3 text-center">
               <p className="text-gray-300">🤝 It&apos;s a Draw!</p>
@@ -535,6 +546,13 @@ export default function GamePage() {
                   ⚠️ Hurry! You&apos;ll lose if time runs out!
                 </p>
               )}
+              
+              {/* Message when you've timed out */}
+              {timeRemaining === 0 && isMyTurn && (
+                <p className="text-red-500 text-lg font-bold mt-2">
+                  ⏱️ TIME&apos;S UP! You lost by timeout.
+                </p>
+              )}
             </div>
             
             {/* Player Info */}
@@ -560,7 +578,7 @@ export default function GamePage() {
               <Connect4Board
                 board={syncedState.board as number[][]}
                 onMove={makeMove}
-                disabled={!isParticipant || !isMyTurn || isPending || isConfirming}
+                disabled={!isParticipant || !isMyTurn || isPending || isConfirming || (isMyTurn && timeRemaining === 0)}
                 isMyTurn={isMyTurn}
                 myColor={isPlayer1 ? "red" : "yellow"}
               />
@@ -568,7 +586,7 @@ export default function GamePage() {
               <TicTacToeBoard
                 board={syncedState.board as number[]}
                 onMove={makeMove}
-                disabled={!isParticipant || !isMyTurn || isPending || isConfirming}
+                disabled={!isParticipant || !isMyTurn || isPending || isConfirming || (isMyTurn && timeRemaining === 0)}
                 isMyTurn={isMyTurn}
                 myMark={isPlayer1 ? "X" : "O"}
               />

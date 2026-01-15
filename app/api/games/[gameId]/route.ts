@@ -100,6 +100,23 @@ export async function POST(
       return NextResponse.json({ error: "Game is already over" }, { status: 400 });
     }
     
+    // Check if current player has timed out - auto-lose
+    const elapsed = Date.now() - state.turnStartTime;
+    if (elapsed >= TURN_TIME_LIMIT_MS) {
+      // The current player (who is trying to move) has timed out - they lose
+      const opponent = body.opponent;
+      state.winner = opponent;
+      state.timeoutLoser = player;
+      state.lastUpdated = Date.now();
+      gameStates.set(gameId, state);
+      
+      return NextResponse.json({ 
+        success: false, 
+        error: "Time expired! You lost by timeout.",
+        state 
+      }, { status: 400 });
+    }
+    
     // Apply the move based on game type
     if (state.gameType === "connect4") {
       const board = state.board as number[][];
