@@ -294,6 +294,33 @@ export function useGame(gameId: bigint | undefined) {
 }
 
 /**
+ * Get the next game ID (total number of games created)
+ */
+export function useNextGameId() {
+  return useReadContract({
+    address: CONTRACTS.GAME_MANAGER,
+    abi: GAME_MANAGER_ABI,
+    functionName: "nextGameId",
+    chainId: CHAIN_ID,
+  });
+}
+
+/**
+ * Game data structure returned from contract
+ */
+export interface GameData {
+  id: bigint;
+  player1: `0x${string}`;
+  player2: `0x${string}`;
+  wagerAmount: bigint;
+  player2Wager: bigint;
+  gameType: number;
+  status: number;
+  createdAt: bigint;
+  winner: `0x${string}`;
+}
+
+/**
  * Calculate player1's wager (with edge) for a given base wager
  */
 export function useCalculatePlayer1Wager(wagerAmount: bigint, gameType: GameType) {
@@ -310,7 +337,7 @@ export function useCalculatePlayer1Wager(wagerAmount: bigint, gameType: GameType
  * Hook for all game write operations
  */
 export function useGameActions() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const approveTokens = (amount: bigint) => {
@@ -374,6 +401,7 @@ export function useGameActions() {
     isConfirming,
     isSuccess,
     error,
+    reset,
   };
 }
 
