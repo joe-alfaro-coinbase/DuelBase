@@ -40,7 +40,7 @@ const types = {
  * const signature = await signGameResult(
  *   BigInt(gameId),
  *   winnerAddress,
- *   process.env.BACKEND_SIGNER_PRIVATE_KEY
+ *   process.env.NEXT_PUBLIC_BACKEND_SIGNER_KEY
  * );
  * return { signature };
  */
@@ -81,7 +81,7 @@ export async function exampleApiHandler(request: Request) {
   const signature = await signGameResult(
     BigInt(gameId),
     winner as `0x${string}`,
-    process.env.BACKEND_SIGNER_PRIVATE_KEY as `0x${string}`
+    process.env.NEXT_PUBLIC_BACKEND_SIGNER_KEY as `0x${string}`
   );
 
   return Response.json({ signature });

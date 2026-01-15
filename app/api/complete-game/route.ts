@@ -41,10 +41,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the backend signer private key from environment
-    const privateKey = process.env.BACKEND_SIGNER_PRIVATE_KEY;
+    const privateKey = process.env.NEXT_PUBLIC_BACKEND_SIGNER_KEY;
     
     if (!privateKey) {
-      console.error("BACKEND_SIGNER_PRIVATE_KEY not configured");
+      console.error("NEXT_PUBLIC_BACKEND_SIGNER_KEY not configured");
       return NextResponse.json(
         { error: "Server configuration error" },
         { status: 500 }
