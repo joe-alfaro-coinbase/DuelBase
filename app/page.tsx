@@ -13,6 +13,7 @@ import {
   useDuelBalance,
   useDuelAllowance,
   useGameActions,
+  useCalculatePlayer1Wager,
   GameType,
   DUEL_DECIMALS,
   CONTRACTS,
@@ -39,6 +40,10 @@ export default function Home() {
   // Contract data
   const { data: duelBalance, refetch: refetchBalance } = useDuelBalance(address);
   const { data: duelAllowance, refetch: refetchAllowance } = useDuelAllowance(address);
+  
+  // Calculate Player 1's actual cost (base wager + edge fee)
+  const wagerBigInt = wagerAmount ? parseUnits(wagerAmount, DUEL_DECIMALS) : BigInt(0);
+  const { data: player1WagerCost } = useCalculatePlayer1Wager(wagerBigInt, gameType);
 
   // Game actions
   const {
@@ -54,9 +59,10 @@ export default function Home() {
   } = useGameActions();
 
   const formattedBalance = duelBalance ? formatUnits(duelBalance, DUEL_DECIMALS) : '0';
-  const wagerBigInt = wagerAmount ? parseUnits(wagerAmount, DUEL_DECIMALS) : BigInt(0);
-  const needsApproval = duelAllowance !== undefined && wagerBigInt > BigInt(0) && duelAllowance < wagerBigInt;
-  const hasEnoughBalance = duelBalance !== undefined && wagerBigInt <= duelBalance;
+  // Player 1 needs to approve and have enough for wager + edge fee
+  const actualCost = player1WagerCost || wagerBigInt;
+  const needsApproval = duelAllowance !== undefined && actualCost > BigInt(0) && duelAllowance < actualCost;
+  const hasEnoughBalance = duelBalance !== undefined && actualCost <= duelBalance;
 
   useEffect(() => {
     sdk.actions.ready();
@@ -84,13 +90,13 @@ export default function Home() {
         });
       } else if (step === 'create' && receipt) {
         // Game created successfully - extract gameId and navigate
-        let gameId = '0';
-        if (receipt.logs.length > 0) {
-          const firstLog = receipt.logs[0];
-          if (firstLog.topics[1]) {
-            gameId = BigInt(firstLog.topics[1]).toString();
-          }
+      let gameId = '0';
+      if (receipt.logs.length > 0) {
+        const firstLog = receipt.logs[0];
+        if (firstLog.topics[1]) {
+          gameId = BigInt(firstLog.topics[1]).toString();
         }
+      }
         setCreatedGameId(gameId);
         setStep('success');
         refetchBalance();
@@ -107,7 +113,8 @@ export default function Home() {
 
     if (needsApproval) {
       setStep('approve');
-      approveTokens(wagerBigInt);
+      // Approve the actual cost (wager + edge fee for Player 1)
+      approveTokens(actualCost);
     } else {
       setStep('create');
       createGame(
@@ -327,6 +334,11 @@ export default function Home() {
                     <p className="text-xs text-gray-500 mt-1">
                       Your balance: {Number(formattedBalance).toLocaleString()} DUEL
                     </p>
+                    {wagerAmount && player1WagerCost && player1WagerCost > wagerBigInt && (
+                      <p className="text-xs text-purple-400 mt-1">
+                        💡 Your cost: {formatUnits(player1WagerCost, DUEL_DECIMALS)} DUEL (includes 5% edge fee)
+                      </p>
+                    )}
                   </div>
 
                   {/* Error Display */}
