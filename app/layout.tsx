@@ -68,7 +68,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <ErudaProvider />
-        <meta name="base:app_id" content="696933b5effdef4d6af2c415" />
+        <meta name="base:app_id" content="696943adeffdef4d6af2c42c" />
       </head>
       <body
         className={`${inter.variable} antialiased`}
