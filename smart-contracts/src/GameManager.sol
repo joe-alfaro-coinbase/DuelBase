@@ -38,8 +38,8 @@ contract GameManager is Ownable, ReentrancyGuard {
         uint256 id;
         address player1;
         address player2;
-        uint256 wagerAmount; // Base wager (what player2 pays)
-        uint256 player1Wager; // wager + edge
+        uint256 wagerAmount; // Base wager (what player1 pays)
+        uint256 player2Wager; // wager - edge (reduced for second player disadvantage)
         GameType gameType;
         GameStatus status;
         uint256 createdAt;
@@ -63,7 +63,8 @@ contract GameManager is Ownable, ReentrancyGuard {
     /// @notice Mapping of game ID to Game struct
     mapping(uint256 => Game) public games;
 
-    /// @notice First player edge percentage per game type (in basis points, e.g., 500 = 5%)
+    /// @notice Edge percentage per game type (in basis points, e.g., 500 = 5%)
+    /// @dev Player2's wager is reduced by this percentage to compensate player1 for going first
     mapping(GameType => uint256) public edgePercent;
 
     /// @notice Mapping to track used signatures (prevents replay)
@@ -91,7 +92,7 @@ contract GameManager is Ownable, ReentrancyGuard {
         address indexed player1,
         address indexed player2,
         uint256 wagerAmount,
-        uint256 player1Wager,
+        uint256 player2Wager,
         GameType gameType
     );
 
@@ -144,8 +145,9 @@ contract GameManager is Ownable, ReentrancyGuard {
         backendSigner = _backendSigner;
 
         // Set default edge percentages (in basis points)
-        edgePercent[GameType.TicTacToe] = 500; // 5% edge for first player
-        edgePercent[GameType.ConnectFour] = 300; // 3% edge for first player
+        // Player2's wager is reduced by this percentage
+        edgePercent[GameType.TicTacToe] = 500; // 5% reduction for player2
+        edgePercent[GameType.ConnectFour] = 300; // 3% reduction for player2
 
         // Build EIP-712 domain separator
         DOMAIN_SEPARATOR = keccak256(
@@ -166,7 +168,7 @@ contract GameManager is Ownable, ReentrancyGuard {
     /**
      * @notice Creates a new game with a wager
      * @param opponent The address of the opponent (player2)
-     * @param wagerAmount The base wager amount (what player2 will pay)
+     * @param wagerAmount The base wager amount (what player1 will pay)
      * @param gameType The type of game to play
      * @return gameId The ID of the created game
      */
@@ -184,9 +186,9 @@ contract GameManager is Ownable, ReentrancyGuard {
 
         gameId = nextGameId++;
 
-        // Calculate player1's wager with edge
+        // Calculate player2's reduced wager (edge compensates for second-mover disadvantage)
         uint256 edge = (wagerAmount * edgePercent[gameType]) / BASIS_POINTS;
-        uint256 player1Wager = wagerAmount + edge;
+        uint256 player2Wager = wagerAmount - edge;
 
         // Create the game
         games[gameId] = Game({
@@ -194,22 +196,22 @@ contract GameManager is Ownable, ReentrancyGuard {
             player1: msg.sender,
             player2: opponent,
             wagerAmount: wagerAmount,
-            player1Wager: player1Wager,
+            player2Wager: player2Wager,
             gameType: gameType,
             status: GameStatus.Created,
             createdAt: block.timestamp,
             winner: address(0)
         });
 
-        // Transfer player1's wager to the contract
-        duelToken.safeTransferFrom(msg.sender, address(this), player1Wager);
+        // Transfer player1's wager to the contract (full wager amount)
+        duelToken.safeTransferFrom(msg.sender, address(this), wagerAmount);
 
         emit GameCreated(
             gameId,
             msg.sender,
             opponent,
             wagerAmount,
-            player1Wager,
+            player2Wager,
             gameType
         );
     }
@@ -234,8 +236,8 @@ contract GameManager is Ownable, ReentrancyGuard {
         // Update game status
         game.status = GameStatus.Active;
 
-        // Transfer player2's wager to the contract
-        duelToken.safeTransferFrom(msg.sender, address(this), game.wagerAmount);
+        // Transfer player2's reduced wager to the contract
+        duelToken.safeTransferFrom(msg.sender, address(this), game.player2Wager);
 
         emit GameJoined(gameId, msg.sender);
     }
@@ -286,8 +288,8 @@ contract GameManager is Ownable, ReentrancyGuard {
         game.status = GameStatus.Completed;
         game.winner = winner;
 
-        // Calculate total payout
-        uint256 totalPayout = game.player1Wager + game.wagerAmount;
+        // Calculate total payout (player1's full wager + player2's reduced wager)
+        uint256 totalPayout = game.wagerAmount + game.player2Wager;
 
         // Transfer winnings to the winner
         duelToken.safeTransfer(winner, totalPayout);
@@ -318,8 +320,8 @@ contract GameManager is Ownable, ReentrancyGuard {
         // Update game status
         game.status = GameStatus.Cancelled;
 
-        // Refund player1's wager
-        duelToken.safeTransfer(game.player1, game.player1Wager);
+        // Refund player1's full wager
+        duelToken.safeTransfer(game.player1, game.wagerAmount);
 
         emit GameCancelled(gameId, msg.sender);
     }
@@ -382,17 +384,17 @@ contract GameManager is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Calculates the player1 wager for a given base wager and game type
-     * @param wagerAmount The base wager amount
+     * @notice Calculates the player2 wager for a given base wager and game type
+     * @param wagerAmount The base wager amount (what player1 pays)
      * @param gameType The game type
-     * @return The player1 wager amount (including edge)
+     * @return The player2 wager amount (reduced by edge)
      */
-    function calculatePlayer1Wager(
+    function calculatePlayer2Wager(
         uint256 wagerAmount,
         GameType gameType
     ) external view returns (uint256) {
         uint256 edge = (wagerAmount * edgePercent[gameType]) / BASIS_POINTS;
-        return wagerAmount + edge;
+        return wagerAmount - edge;
     }
 
     /**

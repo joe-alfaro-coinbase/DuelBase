@@ -15,15 +15,17 @@ import {
   InputLabel,
   OutlinedInput,
   FormHelperText,
+  CircularProgress,
 } from '@mui/material';
 
 type StartGameModalProps = {
   open: boolean;
   onClose?: () => void;
   onSubmit?: (data: GameFormData) => void;
+  isLoading?: boolean;
 };
 
-type GameFormData = {
+export type GameFormData = {
   gameType: string;
   wagerAmount: string;
   opponent: string;
@@ -87,7 +89,7 @@ const modalStyle = {
   p: 4,
 };
 
-export default function StartGameModal({ open, onClose, onSubmit }: StartGameModalProps) {
+export default function StartGameModal({ open, onClose, onSubmit, isLoading = false }: StartGameModalProps) {
   const {
     control,
     handleSubmit,
@@ -184,12 +186,12 @@ export default function StartGameModal({ open, onClose, onSubmit }: StartGameMod
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             {onClose && (
-              <Button variant="outlined" onClick={onClose}>
+              <Button variant="outlined" onClick={onClose} disabled={isLoading}>
                 Cancel
               </Button>
             )}
-            <Button type="submit" variant="contained">
-              Start Game
+            <Button type="submit" variant="contained" disabled={isLoading}>
+              {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Start Game'}
             </Button>
           </Box>
         </form>
