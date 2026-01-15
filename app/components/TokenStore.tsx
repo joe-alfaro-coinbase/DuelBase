@@ -64,13 +64,21 @@ export function TokenStore() {
   useEffect(() => {
     if (isSuccess) {
       if (step === "approve") {
-        refetchAllowance();
-        setStep("buy");
-        reset();
+        // Small delay for blockchain state to update
+        setTimeout(() => {
+          refetchAllowance();
+          setStep("buy");
+          reset();
+        }, 1000);
       } else if (step === "buy") {
-        refetchDuel();
-        refetchUsdc();
-        setStep("success");
+        // Refetch balances after a short delay for blockchain state to propagate
+        const refetchBalances = async () => {
+          // Wait a bit for blockchain state
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          await Promise.all([refetchDuel(), refetchUsdc()]);
+          setStep("success");
+        };
+        refetchBalances();
       }
     }
   }, [isSuccess, step, refetchAllowance, refetchDuel, refetchUsdc, reset]);
@@ -92,7 +100,11 @@ export function TokenStore() {
     setStep("input");
     setDuelAmount("");
     reset();
-  }, [reset]);
+    // Refetch balances when returning to input
+    refetchDuel();
+    refetchUsdc();
+    refetchAllowance();
+  }, [reset, refetchDuel, refetchUsdc, refetchAllowance]);
 
   // Quick amount buttons
   const quickAmounts = ["100", "500", "1000", "5000"];
