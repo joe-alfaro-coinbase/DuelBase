@@ -17,7 +17,6 @@ import {
 import { baseSepolia } from "wagmi/chains";
 
 const CHAIN_ID = baseSepolia.id;
-const CANCEL_TIMEOUT_HOURS = 24; // Must match contract's cancelTimeout
 
 interface PendingGame {
   id: bigint;
@@ -27,7 +26,6 @@ interface PendingGame {
   isChallenger: boolean;
   createdAt: Date;
   status: GameStatus;
-  canCancelAt: Date; // When the game can be cancelled
 }
 
 export function PendingGames() {
@@ -37,13 +35,6 @@ export function PendingGames() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [dismissedGames, setDismissedGames] = useState<Set<string>>(new Set());
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
-
-  // Update current time every minute for cancel countdown
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Load dismissed games from localStorage
   useEffect(() => {
@@ -104,24 +95,6 @@ export function PendingGames() {
     localStorage.setItem('dismissedGames', JSON.stringify([...newDismissed]));
   };
 
-  // Helper to format time remaining until cancel is available
-  const formatTimeRemaining = (canCancelAt: Date): string => {
-    const msRemaining = canCancelAt.getTime() - currentTime.getTime();
-    if (msRemaining <= 0) return '';
-    
-    const hours = Math.floor(msRemaining / (1000 * 60 * 60));
-    const minutes = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
-  const canCancelGame = (game: PendingGame): boolean => {
-    return currentTime >= game.canCancelAt;
-  };
-
   // Build contract calls to fetch recent games
   const gameIds = nextGameId ? Array.from(
     { length: Math.min(Number(nextGameId), 50) }, // Fetch last 50 games max
@@ -166,18 +139,14 @@ export function PendingGames() {
       if (player1 === userAddress || player2 === userAddress) {
         const isChallenger = player1 === userAddress;
         
-        const createdAt = new Date(Number(game.createdAt) * 1000);
-        const canCancelAt = new Date(createdAt.getTime() + CANCEL_TIMEOUT_HOURS * 60 * 60 * 1000);
-        
         pending.push({
           id: game.id,
           opponent: isChallenger ? game.player2 : game.player1,
           wagerAmount: formatUnits(game.wagerAmount, DUEL_DECIMALS),
           gameType: game.gameType === GameType.TicTacToe ? "Tic Tac Toe" : "Connect Four",
           isChallenger,
-          createdAt,
+          createdAt: new Date(Number(game.createdAt) * 1000),
           status: game.status,
-          canCancelAt,
         });
       }
     });
@@ -289,17 +258,15 @@ export function PendingGames() {
                     </button>
                     <button
                       onClick={() => handleCancelGame(game.id)}
-                      disabled={!canCancelGame(game) || (cancellingId === game.id.toString() && (isCancelPending || isCancelConfirming))}
+                      disabled={cancellingId === game.id.toString() && (isCancelPending || isCancelConfirming)}
                       className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm font-medium rounded-lg transition-colors border border-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={!canCancelGame(game) ? `Can cancel in ${formatTimeRemaining(game.canCancelAt)}` : 'Cancel game and get refund'}
+                      title="Cancel game and get refund"
                     >
                       {cancellingId === game.id.toString() && (isCancelPending || isCancelConfirming) ? (
                         <span className="flex items-center gap-1">
                           <span className="animate-spin h-3 w-3 border-2 border-red-300 border-t-transparent rounded-full" />
                           Cancelling...
                         </span>
-                      ) : !canCancelGame(game) ? (
-                        <span className="text-xs">Cancel in {formatTimeRemaining(game.canCancelAt)}</span>
                       ) : (
                         "Cancel"
                       )}
