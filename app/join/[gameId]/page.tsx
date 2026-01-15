@@ -202,7 +202,7 @@ export default function JoinGamePage() {
             <h3 className="font-bold text-green-400 mb-2">You&apos;re In!</h3>
             <p className="text-green-300 text-sm mb-4">Game is now active. Time to play!</p>
             <Link
-              href={`/game/${gameId}`}
+              href={`/games/${gameId}`}
               className="inline-block px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-xl transition-all"
             >
               🎮 Start Playing

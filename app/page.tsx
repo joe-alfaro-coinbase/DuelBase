@@ -130,13 +130,13 @@ export default function Home() {
 
   const goToGame = () => {
     if (createdGameId) {
-      router.push(`/games/${CONTRACTS.TICTACTOE}?gameId=${createdGameId}`);
+      router.push(`/games/${createdGameId}`);
     }
   };
 
   const copyInviteLink = () => {
     if (createdGameId) {
-      navigator.clipboard.writeText(`${window.location.origin}/games/${CONTRACTS.TICTACTOE}?gameId=${createdGameId}`);
+      navigator.clipboard.writeText(`${window.location.origin}/games/${createdGameId}`);
       setCopied(true);
     }
   };
