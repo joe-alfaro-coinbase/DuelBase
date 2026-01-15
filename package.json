@@ -2,16 +2,8 @@
   "name": "duelbase",
   "version": "0.1.0",
   "private": true,
-  "description": "A simple starter template for building Base Mini Apps with Next.js",
-  "author": "patnir (https://github.com/patnir)",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/patnir/starterminiapp.git"
-  },
-  "homepage": "https://starterminiapp.com",
-  "bugs": {
-    "url": "https://github.com/patnir/starterminiapp/issues"
-  },
+  "description": "1v1 wagering games on Base",
+  "homepage": "https://duel-base.vercel.app",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",

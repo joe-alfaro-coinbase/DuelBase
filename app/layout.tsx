@@ -11,21 +11,21 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Base Mini App Starter - npx starterminiapp",
-  description: "Bootstrap your Base Mini App in seconds with npx starterminiapp. Zero-config CLI for Farcaster Mini Apps with Next.js, TypeScript, Wagmi, and Base integration.",
-  metadataBase: new URL('https://starterminiapp.com'),
-  keywords: ["base", "farcaster", "mini app", "nextjs", "starter", "template", "cli", "npm", "npx", "starterminiapp"],
+  title: "DuelBase - 1v1 Wagering Games",
+  description: "Play 1v1 wagering games with friends on Base. Tic-Tac-Toe, Connect 4, and more with DUEL token stakes.",
+  metadataBase: new URL('https://duel-base.vercel.app'),
+  keywords: ["base", "farcaster", "mini app", "games", "wagering", "duel", "tic-tac-toe", "connect4"],
   openGraph: {
-    title: "Base Mini App Starter - npx starterminiapp",
-    description: "Bootstrap your Base Mini App in one command: npx starterminiapp my-app. Ready-to-deploy template for Farcaster with Base integration.",
-    url: "https://starterminiapp.com",
-    siteName: "Base Mini App Starter",
+    title: "DuelBase - 1v1 Wagering Games",
+    description: "Play 1v1 wagering games with friends on Base. Stake DUEL tokens and compete!",
+    url: "https://duel-base.vercel.app",
+    siteName: "DuelBase",
     images: [
       {
         url: "/hero.png",
         width: 1200,
         height: 630,
-        alt: "Base Mini App Starter - npx starterminiapp"
+        alt: "DuelBase - 1v1 Wagering Games"
       }
     ],
     locale: "en_US",
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Base Mini App Starter - npx starterminiapp",
-    description: "Bootstrap your Base Mini App in one command: npx starterminiapp my-app",
+    title: "DuelBase - 1v1 Wagering Games",
+    description: "Play 1v1 wagering games with friends on Base. Stake DUEL tokens and compete!",
     images: ["/hero.png"]
   },
   icons: {
@@ -44,14 +44,14 @@ export const metadata: Metadata = {
   other: {
     "fc:miniapp": JSON.stringify({
       version: "1",
-      imageUrl: "https://starterminiapp.com/hero.png",
+      imageUrl: "https://duel-base.vercel.app/hero.png",
       button: {
-        title: "Open App",
+        title: "Play Now",
         action: {
           type: "launch_miniapp",
           url: "https://duel-base.vercel.app",
-          name: "Base Mini App Starter",
-          splashImageUrl: "https://starterminiapp.com/splash.png",
+          name: "DuelBase",
+          splashImageUrl: "https://duel-base.vercel.app/splash.png",
           splashBackgroundColor: "#000000"
         }
       }
