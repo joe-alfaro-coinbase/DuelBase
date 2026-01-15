@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install --prefer-offline --no-audit --progress=false"
+  "buildCommand": "yarn build",
+  "devCommand": "yarn dev",
+  "installCommand": "yarn install"
 }
