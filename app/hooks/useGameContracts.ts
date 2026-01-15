@@ -1,6 +1,7 @@
 "use client";
 
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 import { parseEther, formatEther } from "viem";
 
 // ============ Contract Addresses (Base Sepolia) ============
@@ -14,6 +15,9 @@ export const CONTRACTS = {
 // ============ Constants ============
 export const USDC_DECIMALS = 6;
 export const DUEL_DECIMALS = 18;
+
+// Chain ID for all contract interactions
+const CHAIN_ID = baseSepolia.id;
 
 // ============ ABIs (minimal for frontend use) ============
 export const DUEL_TOKEN_ABI = [
@@ -256,6 +260,7 @@ export function useDuelBalance(address: `0x${string}` | undefined) {
     abi: DUEL_TOKEN_ABI,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
+    chainId: CHAIN_ID,
     query: { enabled: !!address },
   });
 }
@@ -269,6 +274,7 @@ export function useDuelAllowance(owner: `0x${string}` | undefined) {
     abi: DUEL_TOKEN_ABI,
     functionName: "allowance",
     args: owner ? [owner, CONTRACTS.GAME_MANAGER] : undefined,
+    chainId: CHAIN_ID,
     query: { enabled: !!owner },
   });
 }
@@ -282,6 +288,7 @@ export function useGame(gameId: bigint | undefined) {
     abi: GAME_MANAGER_ABI,
     functionName: "getGame",
     args: gameId !== undefined ? [gameId] : undefined,
+    chainId: CHAIN_ID,
     query: { enabled: gameId !== undefined },
   });
 }
@@ -295,6 +302,7 @@ export function useCalculatePlayer1Wager(wagerAmount: bigint, gameType: GameType
     abi: GAME_MANAGER_ABI,
     functionName: "calculatePlayer1Wager",
     args: [wagerAmount, gameType],
+    chainId: CHAIN_ID,
   });
 }
 
@@ -311,6 +319,7 @@ export function useGameActions() {
       abi: DUEL_TOKEN_ABI,
       functionName: "approve",
       args: [CONTRACTS.GAME_MANAGER, amount],
+      chainId: CHAIN_ID,
     });
   };
 
@@ -320,6 +329,7 @@ export function useGameActions() {
       abi: GAME_MANAGER_ABI,
       functionName: "createGame",
       args: [opponent, wagerAmount, gameType],
+      chainId: CHAIN_ID,
     });
   };
 
@@ -328,6 +338,7 @@ export function useGameActions() {
       address: CONTRACTS.GAME_MANAGER,
       abi: GAME_MANAGER_ABI,
       functionName: "joinGame",
+      chainId: CHAIN_ID,
       args: [gameId],
     });
   };
@@ -338,6 +349,7 @@ export function useGameActions() {
       abi: GAME_MANAGER_ABI,
       functionName: "completeGame",
       args: [gameId, winner, signature],
+      chainId: CHAIN_ID,
     });
   };
 
@@ -347,6 +359,7 @@ export function useGameActions() {
       abi: GAME_MANAGER_ABI,
       functionName: "cancelGame",
       args: [gameId],
+      chainId: CHAIN_ID,
     });
   };
 
@@ -375,6 +388,7 @@ export function useUsdcBalance(address: `0x${string}` | undefined) {
     abi: USDC_ABI,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
+    chainId: CHAIN_ID,
     query: { enabled: !!address },
   });
 }
@@ -388,6 +402,7 @@ export function useUsdcAllowance(owner: `0x${string}` | undefined) {
     abi: USDC_ABI,
     functionName: "allowance",
     args: owner ? [owner, CONTRACTS.TOKEN_STORE] : undefined,
+    chainId: CHAIN_ID,
     query: { enabled: !!owner },
   });
 }
@@ -400,6 +415,7 @@ export function useTokenPrice() {
     address: CONTRACTS.TOKEN_STORE,
     abi: TOKEN_STORE_ABI,
     functionName: "pricePerToken",
+    chainId: CHAIN_ID,
   });
 }
 
@@ -411,6 +427,7 @@ export function useStoreIsOpen() {
     address: CONTRACTS.TOKEN_STORE,
     abi: TOKEN_STORE_ABI,
     functionName: "isOpen",
+    chainId: CHAIN_ID,
   });
 }
 
@@ -422,6 +439,7 @@ export function useStoreInventory() {
     address: CONTRACTS.TOKEN_STORE,
     abi: TOKEN_STORE_ABI,
     functionName: "getInventory",
+    chainId: CHAIN_ID,
   });
 }
 
@@ -434,6 +452,7 @@ export function useCalculateCost(duelAmount: bigint) {
     abi: TOKEN_STORE_ABI,
     functionName: "calculateCost",
     args: [duelAmount],
+    chainId: CHAIN_ID,
     query: { enabled: duelAmount > BigInt(0) },
   });
 }
@@ -451,6 +470,7 @@ export function useTokenStore() {
       abi: USDC_ABI,
       functionName: "approve",
       args: [CONTRACTS.TOKEN_STORE, amount],
+      chainId: CHAIN_ID,
     });
   };
 
@@ -460,6 +480,7 @@ export function useTokenStore() {
       abi: TOKEN_STORE_ABI,
       functionName: "buyTokens",
       args: [duelAmount],
+      chainId: CHAIN_ID,
     });
   };
 

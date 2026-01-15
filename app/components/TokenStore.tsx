@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 import { formatUnits, parseUnits } from "viem";
 import {
   useDuelBalance,
@@ -18,8 +19,13 @@ import {
 
 export function TokenStore() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain, isPending: isSwitching } = useSwitchChain();
   const [duelAmount, setDuelAmount] = useState("");
   const [step, setStep] = useState<"input" | "approve" | "buy" | "success">("input");
+  
+  // Check if on correct network
+  const isWrongNetwork = chainId !== baseSepolia.id;
 
   // Read contract data
   const { data: duelBalance, refetch: refetchDuel } = useDuelBalance(address);
@@ -232,8 +238,31 @@ export function TokenStore() {
               </div>
             )}
 
+            {/* Wrong Network Warning */}
+            {isWrongNetwork && (
+              <button
+                onClick={() => switchChain({ chainId: baseSepolia.id })}
+                disabled={isSwitching}
+                className="w-full py-4 mb-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSwitching ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Switching...
+                  </>
+                ) : (
+                  <>
+                    <span>⚠️</span> Switch to Base Sepolia
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Action Button */}
-            {duelAmount && Number(duelAmount) > 0 && (
+            {duelAmount && Number(duelAmount) > 0 && !isWrongNetwork && (
               <button
                 onClick={needsApproval ? handleApprove : handleBuy}
                 disabled={isPending || isConfirming || !usdcCost || (usdcBalance !== undefined && usdcCost !== undefined && usdcCost > usdcBalance)}
