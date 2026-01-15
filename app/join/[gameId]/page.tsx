@@ -47,20 +47,32 @@ export default function JoinGamePage() {
     error,
   } = useGameActions();
 
-  const [step, setStep] = useState<"view" | "approve" | "join" | "success">("view");
+  const [step, setStep] = useState<"view" | "approve" | "joining-after-approve" | "join" | "success">("view");
 
   // Handle successful transaction
   useEffect(() => {
     if (isSuccess) {
       if (step === "approve") {
-        refetchAllowance();
-        setStep("view");
+        // Show loading state while preparing join
+        setStep("joining-after-approve");
+        
+        // Wait for allowance to update, then auto-trigger join
+        const proceedToJoin = async () => {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await refetchAllowance();
+          // Directly trigger join after approval
+          if (gameId) {
+            setStep("join");
+            joinGame(gameId);
+          }
+        };
+        proceedToJoin();
       } else if (step === "join") {
         setStep("success");
         refetchGame();
       }
     }
-  }, [isSuccess, step, refetchAllowance, refetchGame]);
+  }, [isSuccess, step, refetchAllowance, refetchGame, gameId, joinGame]);
 
   // Format values for display
   // Player 2 pays wagerAmount (the base wager, no edge)
@@ -290,42 +302,23 @@ export default function JoinGamePage() {
               </div>
             )}
 
-            {/* Approve Button */}
-            {hasEnoughBalance && needsApproval && (
+            {/* Action Button - single button that handles approve -> join flow */}
+            {hasEnoughBalance && (
               <button
-                onClick={handleApprove}
-                disabled={isPending || isConfirming}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-purple-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+                onClick={needsApproval ? handleApprove : handleJoin}
+                disabled={isPending || isConfirming || step === "joining-after-approve"}
+                className={`w-full py-4 ${needsApproval ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-purple-500/25' : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 shadow-green-500/25'} text-white font-bold text-lg rounded-xl transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2`}
               >
-                {isPending || isConfirming ? (
+                {isPending || isConfirming || step === "joining-after-approve" ? (
                   <>
                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Approving...
+                    {step === "approve" ? "Approving..." : step === "joining-after-approve" ? "Preparing to join..." : "Joining..."}
                   </>
-                ) : (
+                ) : needsApproval ? (
                   <>🔓 Approve DUEL</>
-                )}
-              </button>
-            )}
-
-            {/* Join Button */}
-            {hasEnoughBalance && !needsApproval && (
-              <button
-                onClick={handleJoin}
-                disabled={isPending || isConfirming}
-                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg shadow-green-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isPending || isConfirming ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Joining...
-                  </>
                 ) : (
                   <>⚔️ Join Game & Stake {Number(formattedWager).toLocaleString()} DUEL</>
                 )}
