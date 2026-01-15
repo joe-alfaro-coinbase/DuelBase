@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits } from "viem";
 import Link from "next/link";
 import { useReadContracts } from "wagmi";
@@ -33,6 +33,72 @@ export function PendingGames() {
   const { data: nextGameId } = useNextGameId();
   const [pendingGames, setPendingGames] = useState<PendingGame[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [dismissedGames, setDismissedGames] = useState<Set<string>>(new Set());
+
+  // Load dismissed games from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('dismissedGames');
+    if (stored) {
+      setDismissedGames(new Set(JSON.parse(stored)));
+    }
+  }, []);
+
+  // Cancel game transaction (only for game creator/player1)
+  const { 
+    data: cancelHash, 
+    writeContract: cancelGame, 
+    isPending: isCancelPending,
+    reset: resetCancel,
+    error: cancelError
+  } = useWriteContract();
+  
+  const { isLoading: isCancelConfirming, isSuccess: isCancelSuccess } = useWaitForTransactionReceipt({
+    hash: cancelHash,
+  });
+
+  // Handle cancel success
+  useEffect(() => {
+    if (isCancelSuccess && cancellingId) {
+      // Remove the cancelled game from the list
+      setPendingGames(prev => prev.filter(g => g.id.toString() !== cancellingId));
+      setCancellingId(null);
+      resetCancel();
+    }
+  }, [isCancelSuccess, cancellingId, resetCancel]);
+
+  // Handle cancel error
+  useEffect(() => {
+    if (cancelError) {
+      setCancellingId(null);
+      // Show error message - timeout not reached or other issue
+      const errorMsg = cancelError.message.includes('TimeoutNotReached') 
+        ? 'Cannot cancel yet - wait period not elapsed' 
+        : 'Failed to cancel game';
+      alert(errorMsg);
+      resetCancel();
+    }
+  }, [cancelError, resetCancel]);
+
+  // On-chain cancel for game creator (refunds their wager)
+  const handleCancelGame = (gameId: bigint) => {
+    setCancellingId(gameId.toString());
+    cancelGame({
+      address: CONTRACTS.GAME_MANAGER,
+      abi: GAME_MANAGER_ABI,
+      functionName: "cancelGame",
+      args: [gameId],
+      chainId: CHAIN_ID,
+    });
+  };
+
+  // Local dismiss for invitee (they haven't staked funds yet)
+  const handleDismissInvite = (gameId: bigint) => {
+    const newDismissed = new Set(dismissedGames);
+    newDismissed.add(gameId.toString());
+    setDismissedGames(newDismissed);
+    localStorage.setItem('dismissedGames', JSON.stringify([...newDismissed]));
+  };
 
   // Build contract calls to fetch recent games
   const gameIds = nextGameId ? Array.from(
@@ -92,8 +158,11 @@ export function PendingGames() {
 
     // Sort by creation time (newest first)
     pending.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    setPendingGames(pending);
-  }, [gamesData, address]);
+    
+    // Filter out dismissed games (for invitees who declined)
+    const filtered = pending.filter(g => !dismissedGames.has(g.id.toString()));
+    setPendingGames(filtered);
+  }, [gamesData, address, dismissedGames]);
 
   const copyInviteLink = (gameId: bigint) => {
     const link = `${window.location.origin}/join/${gameId}`;
@@ -192,20 +261,36 @@ export function PendingGames() {
                         <>📋 Copy Link</>
                       )}
                     </button>
-                    <Link
-                      href={`/games/${game.id}`}
-                      className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-sm font-medium rounded-lg transition-colors border border-purple-500/30"
+                    <button
+                      onClick={() => handleCancelGame(game.id)}
+                      disabled={cancellingId === game.id.toString() && (isCancelPending || isCancelConfirming)}
+                      className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm font-medium rounded-lg transition-colors border border-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      View
-                    </Link>
+                      {cancellingId === game.id.toString() && (isCancelPending || isCancelConfirming) ? (
+                        <span className="flex items-center gap-1">
+                          <span className="animate-spin h-3 w-3 border-2 border-red-300 border-t-transparent rounded-full" />
+                          Cancelling...
+                        </span>
+                      ) : (
+                        "Cancel"
+                      )}
+                    </button>
                   </>
                 ) : (
-                  <Link
-                    href={`/join/${game.id}`}
-                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    Accept
-                  </Link>
+                  <>
+                    <Link
+                      href={`/join/${game.id}`}
+                      className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      Accept
+                    </Link>
+                    <button
+                      onClick={() => handleDismissInvite(game.id)}
+                      className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm font-medium rounded-lg transition-colors border border-red-500/30"
+                    >
+                      Decline
+                    </button>
+                  </>
                 )}
               </div>
             </div>
