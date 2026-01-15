@@ -1,27 +1,26 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjEzOTEsInR5cGUiOiJhdXRoIiwia2V5IjoiMHgzMjA3OUM0ZjVFMjNjOGNlMENhZWQwODljQzUzRDExQjc0QjA2ZkIxIn0",
-    "payload": "eyJkb21haW4iOiJzdGFydGVybWluaWFwcC5jb20ifQ",
-    "signature": "pVMj12ZrzRUbJ8EDqgsqtHseyaVi98XmPNqK51UR6sUsYputEhlpfeepow5KtI4oRtr/WAwlQyjcWWTQVw8htBs="
+    "header": "",
+    "payload": "",
+    "signature": ""
   },
   "baseBuilder": {
-    "allowedAddresses": ["0xd76798784d9A4635e30A10C48CD267d7d33E182E"]
+    "allowedAddresses": ["0xFeB707ED0885f2050cF391Fd90Fe2d07c8CD422D", "0x4D22BB19a4DE36526Ab98bBA23AF74Fe1ea8BcfF"]
   },
   "miniapp": {
     "version": "1",
-    "name": "Base Mini App Starter",
+    "name": "DuelBase App",
     "homeUrl": "https://duel-base.vercel.app",
     "iconUrl": "https://starterminiapp.com/icon.png",
     "splashImageUrl": "https://starterminiapp.com/splash.png",
     "splashBackgroundColor": "#000000",
     "heroImageUrl": "https://starterminiapp.com/hero.png",
-    "subtitle": "Build your Base Mini App",
-    "description": "Clone this starter template to build your own Base Mini App. Customize this description to explain what your app does (max 170 chars).",
+    "subtitle": "1v1 Table Top Gaming",
+    "description": "Wager DUEL tokens and compete in 1v1 games with friends.",
     "primaryCategory": "developer-tools",
-    "tags": ["starter", "template", "miniapp"],
-    "ogTitle": "Base Mini App Starter",
-    "ogDescription": "Clone and customize this template to build your Base Mini App",
+    "tags": ["games", "wager", "1v1", "tabletop", "duel", "base"],
+    "ogTitle": "DuelBase App",
+    "ogDescription": "Wager DUEL tokens and compete in 1v1 games with friends.",
     "ogImageUrl": "https://starterminiapp.com/hero.png"
   }
 }
-
