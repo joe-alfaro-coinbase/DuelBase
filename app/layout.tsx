@@ -4,7 +4,7 @@ import { WalletIndicator } from "./components/WalletIndicator";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ErudaProvider } from "./providers/erudaProvider";
-import { sdk } from '@farcaster/miniapp-sdk";
+import { sdk } from '@farcaster/miniapp-sdk';
 import { useEffect } from "react";
 
 const inter = Inter({
